@@ -63,7 +63,7 @@ export default function HomeScreen({
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-5 pt-10 pb-16 sm:pt-14">
+    <div className="mx-auto w-full max-w-4xl px-5 pt-10 pb-36 sm:pt-14">
       <header className="mb-8">
         <p className="font-display text-sm tracking-wide text-bark">SkillTree</p>
         <h1 className="mt-1 text-3xl font-bold text-ink sm:text-4xl">
@@ -100,14 +100,14 @@ export default function HomeScreen({
           <button
             type="button"
             onClick={() => setStep('naming')}
-            className="flex flex-col items-center gap-2 rounded-cozy bg-parchment/70 px-6 pt-4 pb-5 shadow-soft transition duration-300 ease-out hover:-translate-y-1 hover:shadow-lift"
+            className="flex flex-col items-center gap-2 rounded-cozy bg-parchment px-6 pt-4 pb-5 shadow-soft transition duration-300 ease-out hover:-translate-y-1 hover:shadow-lift"
           >
             <TreeSVG planted={false} idle={false} className="h-32 w-24 sm:h-40 sm:w-28" />
             <span className="font-display font-semibold text-ink">Grow a sapling</span>
             <span className="text-xs text-bark">Tap the pot when you are ready</span>
           </button>
         ) : (
-          <div className="rise flex max-w-xl flex-col gap-4 rounded-cozy bg-parchment/85 p-5 shadow-soft sm:flex-row sm:items-center">
+          <div className="rise flex max-w-xl flex-col gap-4 rounded-cozy bg-parchment p-5 shadow-soft sm:flex-row sm:items-center">
             <TreeSVG planted={false} idle={false} className="h-24 w-20 shrink-0 self-center" />
 
             <div className="min-w-0 flex-1">

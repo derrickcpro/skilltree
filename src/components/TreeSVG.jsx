@@ -9,17 +9,31 @@
  */
 
 // One shared coordinate space for every drawing in the app; components scale it
-// with CSS so nothing hardcodes pixel sizes.
+// with CSS so nothing hardcodes pixel sizes. POT_FRAME below is the slice of it
+// that Phase 1 actually shows.
 const CANVAS = { width: 320, height: 460 };
 const POT = { soilY: 364, rimTop: 348, rimBottom: 368, bottomY: 444 };
 const TRUNK_X = 160;
+
+/**
+ * What the SVG actually shows.
+ *
+ * All the drawing coordinates below live in the full 320x460 canvas, because
+ * that space is sized for a mature tree's canopy. In Phase 1 the only things
+ * drawn are a pot and a sprout, which sit in the bottom fifth of it — so
+ * showing the whole canvas renders a small pot floating in a tall empty box.
+ *
+ * The viewBox crops to the pot instead. Same coordinates, tighter frame. When
+ * branches arrive, this widens to the full canvas as the tree grows.
+ */
+const POT_FRAME = '96 300 128 160';
 
 const LEAF_PATH = 'M 0 0 C 5 -6 13 -7 17 0 C 13 7 5 6 0 0 Z';
 
 export default function TreeSVG({ planted = true, grew = false, idle = true, className = '' }) {
   return (
     <svg
-      viewBox={`0 0 ${CANVAS.width} ${CANVAS.height}`}
+      viewBox={POT_FRAME}
       className={className}
       role="img"
       aria-label={planted ? 'A sprout in a terracotta pot' : 'An empty terracotta pot'}

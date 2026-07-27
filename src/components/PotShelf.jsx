@@ -16,7 +16,7 @@ import TreeSVG from './TreeSVG.jsx';
 export default function PotShelf({ trees, sessionsByTree, justPlantedId, onOpen }) {
   if (trees.length === 0) {
     return (
-      <p className="max-w-md rounded-cozy bg-parchment/70 px-5 py-4 text-bark shadow-soft">
+      <p className="max-w-md rounded-cozy bg-parchment px-5 py-4 text-bark shadow-soft">
         The shelf is empty. Plant the first thing you are learning — a language, a chord shape, a
         proof technique. Anything you could explain out loud.
       </p>
@@ -33,7 +33,7 @@ export default function PotShelf({ trees, sessionsByTree, justPlantedId, onOpen 
             <button
               type="button"
               onClick={() => onOpen(tree.id)}
-              className="flex w-full flex-col items-center gap-1 rounded-cozy bg-parchment/80 px-3 pt-3 pb-4 shadow-soft transition duration-300 ease-out hover:-translate-y-1 hover:shadow-lift"
+              className="flex w-full flex-col items-center gap-1 rounded-cozy bg-parchment px-3 py-3 shadow-soft transition duration-300 ease-out hover:-translate-y-1 hover:shadow-lift"
             >
               {/* idle sway off on the shelf: a dozen pots swaying at once is
                   restless rather than calm. The big tree view gets the motion. */}
@@ -41,11 +41,9 @@ export default function PotShelf({ trees, sessionsByTree, justPlantedId, onOpen 
                 planted
                 grew={tree.id === justPlantedId}
                 idle={false}
-                className="h-32 w-full sm:h-40"
+                className="h-24 w-auto sm:h-28"
               />
-              <span className="font-display text-base font-semibold text-ink">
-                {tree.skill_name}
-              </span>
+              <span className="font-display text-sm font-semibold text-ink">{tree.skill_name}</span>
               <span className="text-xs text-bark">
                 {count === 0
                   ? 'Not taught yet'
