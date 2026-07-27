@@ -1,0 +1,130 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------
+   Design tokens. In Tailwind v4 anything declared here becomes a
+   utility class: --color-sage gives you bg-sage / text-sage / border-sage.
+   ------------------------------------------------------------------ */
+@theme {
+  --color-cream: #faf3e3; /* page background */
+  --color-cream-deep: #f2e7cd; /* wall shading, inset panels */
+  --color-parchment: #fffaf0; /* cards sitting on the cream */
+  --color-wood: #5c4a32; /* shelf, window frame, dark trunk */
+  --color-bark: #8b6f47; /* trunk, secondary text */
+  --color-sage: #7a9b76; /* deep foliage, primary action */
+  --color-leaf: #a8c09a; /* light foliage */
+  --color-terracotta: #c77b58; /* pot */
+  --color-amber: #e8a552; /* accents and warnings (never red) */
+  --color-ink: #3d3529; /* body text */
+
+  --font-display: 'Quicksand', ui-rounded, 'Segoe UI', system-ui, sans-serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --radius-cozy: 16px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 2px 4px rgb(93 74 50 / 0.06), 0 8px 24px rgb(93 74 50 / 0.08);
+  --shadow-lift: 0 4px 8px rgb(93 74 50 / 0.08), 0 16px 32px rgb(93 74 50 / 0.12);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    /* Feels like paper rather than a screen. */
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  button {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  /* One visible focus style everywhere, so keyboard users are never lost. */
+  :focus-visible {
+    outline: 2px solid var(--color-sage);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background: var(--color-leaf);
+  }
+}
+
+/* ------------------------------------------------------------------
+   Motion. Everything here is decorative, so all of it is switched off
+   under prefers-reduced-motion at the bottom of the file.
+   ------------------------------------------------------------------ */
+
+/* Leaves pop open with a small overshoot. transform-box keeps the origin on
+   the leaf itself rather than the whole SVG canvas. */
+@keyframes leaf-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.leaf-grow {
+  transform-box: fill-box;
+  transform-origin: 20% 50%; /* the stem end, so it unfurls outward */
+  animation: leaf-pop 1.2s var(--ease-cozy, cubic-bezier(0.33, 0.8, 0.35, 1)) both;
+}
+
+/* The idle sway: barely there, and slow. Rotating the canopy group around the
+   trunk base is what makes it read as a plant and not a wobbling image. */
+@keyframes sway {
+  from {
+    transform: rotate(-0.7deg);
+  }
+  to {
+    transform: rotate(0.7deg);
+  }
+}
+
+.canopy-sway {
+  animation: sway 7s ease-in-out infinite alternate;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.32s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
