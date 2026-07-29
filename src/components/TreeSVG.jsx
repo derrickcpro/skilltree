@@ -1,43 +1,39 @@
-/**
- * TreeSVG — Phase 1: a terracotta pot, optionally with a sprout in it.
- *
- * Branch and leaf geometry arrives in a later phase, when a procedural layout
- * function turns sessions into shapes. For now the only two states are "empty
- * pot" (the invitation to plant) and "sprout" (a tree with no sessions yet), so
- * the pot coordinates live here. They move into the layout module later, once
- * something other than this file needs to know where the soil line sits.
- */
-
-// One shared coordinate space for every drawing in the app; components scale it
-// with CSS so nothing hardcodes pixel sizes. POT_FRAME below is the slice of it
-// that Phase 1 actually shows.
-const CANVAS = { width: 320, height: 460 };
-const POT = { soilY: 364, rimTop: 348, rimBottom: 368, bottomY: 444 };
-const TRUNK_X = 160;
+import { useMemo } from 'react';
+import { layoutTree, POT, TRUNK_X } from '../lib/treeLayout.js';
 
 /**
- * What the SVG actually shows.
+ * TreeSVG — draws whatever `treeLayout` derives from a tree's sessions.
  *
- * All the drawing coordinates below live in the full 320x460 canvas, because
- * that space is sized for a mature tree's canopy. In Phase 1 the only things
- * drawn are a pot and a sprout, which sit in the bottom fifth of it — so
- * showing the whole canvas renders a small pot floating in a tall empty box.
+ * This component owns no geometry. Every coordinate on screen comes out of
+ * `layoutTree`, including the viewBox, which is why a pot with no sessions still
+ * renders exactly as it did in Phase 1: zero sessions is the `sprout` stage, and
+ * that stage's frame is the old pot-only crop.
  *
- * The viewBox crops to the pot instead. Same coordinates, tighter frame. When
- * branches arrive, this widens to the full canvas as the tree grows.
+ * The frame widens as the tree grows — see frameFor() in treeLayout.js for the
+ * rule and its cost. Without that, branches would grow up into cropped space and
+ * the canopy would render off-screen.
+ *
+ * @param planted       false draws the empty pot (the invitation to plant)
+ * @param grew          the whole sprout just appeared — Phase 1's animation
+ * @param idle          run the subtle sway
+ * @param sessions      ordered session rows; [] means "not taught yet"
+ * @param newSessionId  the one session whose branch or leaf should animate in
  */
-const POT_FRAME = '96 300 128 160';
+export default function TreeSVG({
+  planted = true,
+  grew = false,
+  idle = true,
+  className = '',
+  sessions = [],
+  newSessionId = null,
+}) {
+  // Layout is pure and cheap, but it runs on every render of every pot on the
+  // shelf, so memoise on the identity of the list it was given.
+  const tree = useMemo(() => layoutTree(planted ? sessions : []), [planted, sessions]);
+  const isSprout = tree.stage.name === 'sprout';
 
-const LEAF_PATH = 'M 0 0 C 5 -6 13 -7 17 0 C 13 7 5 6 0 0 Z';
-
-export default function TreeSVG({ planted = true, grew = false, idle = true, className = '' }) {
   return (
-    <svg
-      viewBox={POT_FRAME}
-      className={className}
-      role="img"
-      aria-label={planted ? 'A sprout in a terracotta pot' : 'An empty terracotta pot'}
-    >
+    <svg viewBox={tree.frame} className={className} role="img" aria-label={describe(planted, tree)}>
       <defs>
         <path id="leaf-shape" d={LEAF_PATH} />
         <linearGradient id="pot-face" x1="0" y1="0" x2="1" y2="0">
@@ -54,12 +50,27 @@ export default function TreeSVG({ planted = true, grew = false, idle = true, cla
           className={idle ? 'canopy-sway' : undefined}
           style={{ transformOrigin: `${TRUNK_X}px ${POT.soilY}px` }}
         >
-          {/* Nested on purpose: a CSS `transform` animation beats an SVG
-              transform *attribute*, so the sway and the unfurl each need their
-              own element or they cancel each other out. */}
-          <g className={grew ? 'leaf-grow' : undefined}>
-            <Sprout x={TRUNK_X} baseY={POT.soilY} />
-          </g>
+          {isSprout ? (
+            /* Nested on purpose: a CSS `transform` animation beats an SVG
+               transform *attribute*, so the sway and the unfurl each need their
+               own element or they cancel each other out. */
+            <g className={grew ? 'leaf-grow' : undefined}>
+              <Sprout x={TRUNK_X} baseY={POT.soilY} />
+            </g>
+          ) : (
+            <>
+              <path d={tree.trunk.d} fill={tree.trunk.color} />
+
+              {/* Branches under leaves, so foliage sits on top of its own stem. */}
+              {tree.branches.map((branch) => (
+                <Branch key={branch.id} branch={branch} animate={branch.id === newSessionId} />
+              ))}
+
+              {tree.leaves.map((leaf) => (
+                <Leaf key={leaf.id} leaf={leaf} animate={leaf.id === newSessionId} />
+              ))}
+            </>
+          )}
         </g>
       )}
 
@@ -69,6 +80,58 @@ export default function TreeSVG({ planted = true, grew = false, idle = true, cla
     </svg>
   );
 }
+
+/**
+ * A branch: one quadratic Bézier, stroked.
+ *
+ * pathLength="1" normalises the path's length for stroke-dasharray, so the draw
+ * animation needs no measurement of the actual curve. That is the only reason
+ * the attribute is here.
+ */
+function Branch({ branch, animate }) {
+  return (
+    <path
+      d={branch.d}
+      pathLength="1"
+      className={animate ? 'branch-draw' : undefined}
+      fill="none"
+      stroke={branch.color}
+      strokeWidth={branch.width}
+      strokeLinecap="round"
+    />
+  );
+}
+
+/**
+ * A leaf. Three nested elements, each doing one job:
+ *   outer  — position and facing, as SVG attributes
+ *   middle — the scale animation, as CSS (see .leaf-unfurl)
+ *   inner  — the leaf's own size
+ * Collapsing these would put a CSS transform and a transform attribute on the
+ * same element, and the CSS one silently wins.
+ */
+function Leaf({ leaf, animate }) {
+  return (
+    <g transform={`translate(${leaf.x} ${leaf.y}) rotate(${leaf.angleDeg})`}>
+      <g className={animate ? 'leaf-unfurl' : undefined}>
+        <use href="#leaf-shape" fill={leaf.color} transform={`scale(${leaf.scale})`} />
+      </g>
+    </g>
+  );
+}
+
+function describe(planted, tree) {
+  if (!planted) return 'An empty terracotta pot';
+  if (tree.stage.name === 'sprout') return 'A sprout in a terracotta pot';
+
+  const branches = tree.branches.length;
+  const leaves = tree.leaves.length;
+  return `${tree.stage.label} in a terracotta pot, with ${branches} ${
+    branches === 1 ? 'branch' : 'branches'
+  } and ${leaves} ${leaves === 1 ? 'leaf' : 'leaves'}`;
+}
+
+const LEAF_PATH = 'M 0 0 C 5 -6 13 -7 17 0 C 13 7 5 6 0 0 Z';
 
 /**
  * A newly planted sapling: a stem and two seed leaves.

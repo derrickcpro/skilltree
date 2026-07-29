@@ -4,12 +4,12 @@ import TreeSVG from './TreeSVG.jsx';
  * The shelf: one pot per skill, so the room is a glance-able picture of
  * everything being learned.
  *
- * In Phase 1 every tree is a sprout, because nothing has been taught yet. Once
- * sessions exist, each pot will draw its own real tree in miniature from the
- * same component.
+ * Each pot draws its own real tree in miniature, from the same component and the
+ * same layout function the full-size tree view uses. An untaught tree has no
+ * sessions, so it is still a sprout.
  *
  * @param trees          [{ id, skill_name, created_at }]
- * @param sessionsByTree { [treeId]: sessions[] } — used for the session count
+ * @param sessionsByTree { [treeId]: sessions[] } — the tree geometry and the count
  * @param justPlantedId  id of a tree created this visit, so its sprout unfurls
  * @param onOpen         (treeId) => void
  */
@@ -39,6 +39,7 @@ export default function PotShelf({ trees, sessionsByTree, justPlantedId, onOpen 
                   restless rather than calm. The big tree view gets the motion. */}
               <TreeSVG
                 planted
+                sessions={sessionsByTree[tree.id] ?? []}
                 grew={tree.id === justPlantedId}
                 idle={false}
                 className="h-24 w-auto sm:h-28"

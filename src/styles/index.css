@@ -89,6 +89,34 @@
   animation: leaf-pop 1.2s var(--ease-cozy, cubic-bezier(0.33, 0.8, 0.35, 1)) both;
 }
 
+/* Same pop as above, but anchored to the leaf's stem end rather than the whole
+   plant's. LEAF_PATH runs from x=0 to x=17 centred on y=0, so with fill-box the
+   origin 0% 50% is exactly where the leaf meets its branch. Kept separate from
+   .leaf-grow so the sprout's animation is untouched. */
+.leaf-unfurl {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+  animation: leaf-pop 1.2s var(--ease-cozy, cubic-bezier(0.33, 0.8, 0.35, 1)) both;
+}
+
+/* Branches draw themselves on, tip outward. The path carries pathLength="1",
+   which tells the browser to treat its length as 1 user unit no matter its real
+   arc length — so one dasharray value works for every curve and nothing has to
+   measure the path. */
+@keyframes branch-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.branch-draw {
+  stroke-dasharray: 1;
+  animation: branch-draw 1.2s var(--ease-cozy, cubic-bezier(0.33, 0.8, 0.35, 1)) both;
+}
+
 /* The idle sway: barely there, and slow. Rotating the canopy group around the
    trunk base is what makes it read as a plant and not a wobbling image. */
 @keyframes sway {

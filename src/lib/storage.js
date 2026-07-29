@@ -134,3 +134,22 @@ export async function addSession({ treeId, transcript = [], classification = nul
   writeList(KEYS.sessions, [...sessions, session]);
   return session;
 }
+
+/**
+ * Delete every session belonging to one tree.
+ *
+ * Added for the Phase 2 debug panel, which needs to reset a tree between visual
+ * tests. It lives here rather than in the panel because this module is the only
+ * file allowed to know where data lives — a component reaching into localStorage
+ * directly would be the one change that makes the Supabase swap expensive.
+ *
+ * It is a real function, not a test hook: Supabase backs it with a delete under
+ * the tree owner's RLS policy, and a "start this skill over" affordance would use
+ * exactly this.
+ */
+export async function clearSessions(treeId) {
+  if (!treeId) throw new Error('A tree is needed to clear sessions from.');
+
+  const remaining = readList(KEYS.sessions).filter((s) => s.tree_id !== treeId);
+  writeList(KEYS.sessions, remaining);
+}
