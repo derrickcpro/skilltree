@@ -13,8 +13,10 @@ import { growthStage } from '../lib/treeLayout.js';
 export default function TreeView({ tree, sessions, newSessionId, onBack, onGrew, onCleared }) {
   const count = sessions.length;
 
+  // pb-28 rather than pb-36: 144px of bottom padding was most of the reason this
+  // screen scrolled, and 112px still clears the 96px floor graphic.
   return (
-    <div className="mx-auto w-full max-w-2xl px-5 pt-6 pb-36">
+    <div className="mx-auto w-full max-w-2xl px-5 pt-6 pb-28">
       <button
         type="button"
         onClick={onBack}
@@ -34,14 +36,24 @@ export default function TreeView({ tree, sessions, newSessionId, onBack, onGrew,
         </p>
       </header>
 
-      <div className="mt-6 flex justify-center rounded-cozy bg-parchment px-4 py-6 shadow-soft">
-        <TreeSVG
-          planted
-          idle
-          sessions={sessions}
-          newSessionId={newSessionId}
-          className="h-[22rem] w-auto sm:h-[26rem]"
-        />
+      {/* The card is a picture frame, so its size is fixed and the tree changes
+          inside it. aspect-[6/7] is exactly the 312x364 canvas frame's ratio, so
+          the drawing fits edge to edge with no letterboxing; height drives width,
+          which is what stops the card resizing as the tree grows.
+
+          Capped in px as well as vh: without the cap the same tree would be a
+          different size on every monitor. */}
+      <div className="mt-6 flex justify-center">
+        <div className="aspect-[6/7] h-[36vh] max-h-[340px] min-h-[200px] rounded-cozy bg-parchment shadow-soft">
+          <TreeSVG
+            planted
+            idle
+            sessions={sessions}
+            newSessionId={newSessionId}
+            frameMode="canvas"
+            className="h-full w-full"
+          />
+        </div>
       </div>
 
       <div className="mt-6 flex flex-col items-center gap-2">

@@ -18,6 +18,15 @@ import { layoutTree, POT, TRUNK_X } from '../lib/treeLayout.js';
  * @param idle          run the subtle sway
  * @param sessions      ordered session rows; [] means "not taught yet"
  * @param newSessionId  the one session whose branch or leaf should animate in
+ * @param frameMode     'stage' shrink-wraps the viewBox to the growth stage;
+ *                      'canvas' uses one frame for every stage, so a sprout is
+ *                      genuinely small and the canopy grows up into the space
+ *                      above it. See frameFor() in treeLayout.js.
+ * @param preserveAspectRatio
+ *                      defaults to bottom-anchored: when the box and the viewBox
+ *                      disagree, the slack goes above the drawing, so the pot
+ *                      stays planted on the floor of its container instead of
+ *                      recentring every time the frame changes.
  */
 export default function TreeSVG({
   planted = true,
@@ -26,14 +35,25 @@ export default function TreeSVG({
   className = '',
   sessions = [],
   newSessionId = null,
+  frameMode = 'stage',
+  preserveAspectRatio = 'xMidYMax meet',
 }) {
   // Layout is pure and cheap, but it runs on every render of every pot on the
   // shelf, so memoise on the identity of the list it was given.
-  const tree = useMemo(() => layoutTree(planted ? sessions : []), [planted, sessions]);
+  const tree = useMemo(
+    () => layoutTree(planted ? sessions : [], { frame: frameMode }),
+    [planted, sessions, frameMode],
+  );
   const isSprout = tree.stage.name === 'sprout';
 
   return (
-    <svg viewBox={tree.frame} className={className} role="img" aria-label={describe(planted, tree)}>
+    <svg
+      viewBox={tree.frame}
+      preserveAspectRatio={preserveAspectRatio}
+      className={className}
+      role="img"
+      aria-label={describe(planted, tree)}
+    >
       <defs>
         <path id="leaf-shape" d={LEAF_PATH} />
         <linearGradient id="pot-face" x1="0" y1="0" x2="1" y2="0">

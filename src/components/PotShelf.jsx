@@ -36,13 +36,18 @@ export default function PotShelf({ trees, sessionsByTree, justPlantedId, onOpen 
               className="flex w-full flex-col items-center gap-1 rounded-cozy bg-parchment px-3 py-3 shadow-soft transition duration-300 ease-out hover:-translate-y-1 hover:shadow-lift"
             >
               {/* idle sway off on the shelf: a dozen pots swaying at once is
-                  restless rather than calm. The big tree view gets the motion. */}
+                  restless rather than calm. The big tree view gets the motion.
+
+                  A fixed box rather than w-auto: each growth stage crops to a
+                  different aspect ratio, so an auto width made the card jump
+                  sideways when a tree grew. The stage frames stay shrink-wrapped
+                  here — a pot at 96px has no room to waste on headroom. */}
               <TreeSVG
                 planted
                 sessions={sessionsByTree[tree.id] ?? []}
                 grew={tree.id === justPlantedId}
                 idle={false}
-                className="h-24 w-auto sm:h-28"
+                className="h-24 w-20 sm:h-28 sm:w-24"
               />
               <span className="font-display text-sm font-semibold text-ink">{tree.skill_name}</span>
               <span className="text-xs text-bark">

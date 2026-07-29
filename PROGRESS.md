@@ -87,9 +87,50 @@ writing through `storage.addSession`."
   Lint, build, and the geometry checks say the numbers are right and the code
   loads; they say nothing about whether the tree is attractive.
 
+### Follow-up, same session · TreeView fit at 1440x900
+
+You reported the card filling the viewport and the button below the fold. Fixed:
+
+- `TreeView` card is now a fixed-aspect frame — `aspect-[6/7] h-[36vh]
+  max-h-[340px] min-h-[200px]` — so it no longer resizes as the tree grows.
+  `aspect-[6/7]` is exactly the 312x364 canvas frame's ratio, so no letterboxing.
+- `layoutTree(sessions, { frame })` gained a `'canvas'` mode: every stage shares
+  the mature frame, so one canvas unit is always the same number of pixels.
+  **This reverses Phase 1's pot-crop decision, for TreeView only.** It is what
+  makes growth read as growth instead of every stage being rescaled to fill the
+  card. Cost: a sprout now sits in a card that is ~57% empty above it. The shelf
+  keeps the shrink-wrapped per-stage frames, where a tall empty box was the
+  original bug.
+- `preserveAspectRatio="xMidYMax meet"` is now TreeSVG's default, so slack goes
+  above the drawing and the pot stays planted on the container floor. No visible
+  change on the shelf, which has no slack to distribute.
+- `pb-36` → `pb-28` on TreeView. 144px of bottom padding was most of the scroll;
+  112px still clears the 96px floor graphic.
+- `PotShelf` SVG box fixed at `h-24 w-20 sm:h-28 sm:w-24` — the shelf cards had
+  the same width-jitter bug, for the same aspect-ratio reason.
+
+Verified: lint clean, build succeeds, `check:tree` passes with a new canvas-mode
+group (bounds, trunk-centred, aspect matches the card, one frame at every stage),
+debug panel still absent from `dist`.
+
+**Not verified: still never rendered in a browser.** No Chrome was connected and
+the preview tool is rooted at the other project, so the 900px fit below is
+computed from Tailwind's type scale, not measured.
+
+| element | px | cumulative |
+| --- | --- | --- |
+| `pt-6` | 24 | 24 |
+| back link (`text-sm`, 20px line) | 20 | 44 |
+| skill name + stage label | 85.6 | 129.6 |
+| card (`mt-6` + 324) | 348 | 477.6 |
+| button + helper (`mt-6`) | 97.6 | **575.2** |
+| debug panel (dev only) | 162 | 737.2 |
+| `pb-28` | 112 | 849.2 |
+
 ### Not done / next
 
 - Visual pass: open a tree, click the debug buttons, check the canopy at 375px.
+- Confirm the computed 900px fit above against a real browser.
 - Nothing is committed. Git was off-limits this session.
 - Phase 3 seam: `TreeView`'s disabled "Talk to your sapling" button, and
   `App.handleGrew(session)` — which is already exactly what end-of-chat will call.

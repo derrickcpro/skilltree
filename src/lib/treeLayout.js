@@ -341,6 +341,13 @@ function chooseHostBranch(branches, leafCounts) {
 }
 
 /**
+ * The frame every stage shares in `frame: 'canvas'` mode — the mature stage's,
+ * which is the largest. Its aspect ratio (312/364) is what a caller sizing a
+ * fixed-aspect box needs to match, so it is exported.
+ */
+export const CANVAS_FRAME = { x: 4, y: 96, width: 312, height: 364 };
+
+/**
  * The viewBox.
  *
  * A pot occupies the bottom fifth of the canvas, so Phase 1 cropped to it. A
@@ -362,9 +369,23 @@ function chooseHostBranch(branches, leafCounts) {
  * as the camera pulls back, and `viewBox` is an attribute rather than a CSS
  * property, so that snap cannot be transitioned. Smoothing it would mean
  * tweening four numbers in JS.
+ *
+ * `mode` picks which of those two framings a caller wants, because the two call
+ * sites genuinely differ:
+ *
+ *   'stage'  — shrink-wrap to the growth stage (above). What the shelf wants: a
+ *              small pot in a small frame, no wasted space in a 96px card.
+ *   'canvas' — every stage uses the mature frame, so one canvas unit is always
+ *              the same number of pixels. A sprout then draws small at the
+ *              bottom with real headroom above it, and the tree visibly gains
+ *              size as it grows instead of being rescaled to fill. What a fixed
+ *              picture frame wants.
+ *
+ * The guard runs in both modes.
  */
-function frameFor(stage, contentPoints) {
-  const [stageX, stageY, stageWidth] = stage.frame;
+function frameFor(stage, contentPoints, mode) {
+  const [stageX, stageY, stageWidth] =
+    mode === 'canvas' ? [CANVAS_FRAME.x, CANVAS_FRAME.y, CANVAS_FRAME.width] : stage.frame;
 
   let halfWidth = stageWidth / 2;
   let top = stageY;
@@ -437,9 +458,10 @@ function contentPointsOf(trunk, branches, leaves) {
  * the final set. Two counts of majors and minors would not be enough input.
  *
  * @param {Array<{id: string, classification?: 'major'|'minor'}>} sessions oldest first
+ * @param {{frame?: 'stage'|'canvas'}} options see frameFor() for what the modes mean
  * @returns {{stage, trunk, branches, leaves, frame, frameBox, frameFromStage}}
  */
-export function layoutTree(sessions = []) {
+export function layoutTree(sessions = [], { frame = 'stage' } = {}) {
   const list = Array.isArray(sessions) ? sessions : [];
   const stage = stageFor(list.length);
 
@@ -456,7 +478,7 @@ export function layoutTree(sessions = []) {
       trunk: null,
       branches: [],
       leaves: [],
-      ...frameFor(stage, contentPointsOf(null, [], [])),
+      ...frameFor(stage, contentPointsOf(null, [], []), frame),
     };
   }
 
@@ -509,6 +531,6 @@ export function layoutTree(sessions = []) {
     trunk,
     branches,
     leaves,
-    ...frameFor(stage, contentPointsOf(trunk, branches, leaves)),
+    ...frameFor(stage, contentPointsOf(trunk, branches, leaves), frame),
   };
 }

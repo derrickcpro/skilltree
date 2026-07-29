@@ -20,7 +20,7 @@
  *      point list, so a point the frame logic forgot to consider still fails.
  */
 
-import { layoutTree, LEAF_REACH, TRUNK_X } from '../src/lib/treeLayout.js';
+import { CANVAS_FRAME, layoutTree, LEAF_REACH, TRUNK_X } from '../src/lib/treeLayout.js';
 
 // Fixed ids, so this script is as deterministic as the thing it is testing.
 function sessionsFrom(pattern) {
@@ -250,6 +250,49 @@ for (const pattern of SWEEP_PATTERNS) {
     `tightest margin ${tightest.toFixed(1)} units (${tightestEdge})`;
   if (broke > 0) fail(label, firstBreak);
   else pass(label);
+}
+
+// ------------------------------------------------- 4b. the canvas framing mode
+
+/**
+ * `frame: 'canvas'` is a second framing path, so the guard and the centring have
+ * to hold there too. Two extra properties matter in this mode:
+ *
+ *   - the frame is the same at every stage, which is the whole point: one canvas
+ *     unit is always the same number of pixels, so growth reads as growth
+ *   - its aspect ratio must match CANVAS_FRAME, because TreeView sizes a
+ *     fixed-aspect card from it. If they drift, the card letterboxes.
+ */
+console.log('\nCanvas framing — one frame for every stage, aspect matching the card');
+
+const CANVAS_ASPECT = CANVAS_FRAME.width / CANVAS_FRAME.height;
+const canvasFrames = new Set();
+
+for (const [label, pattern] of Object.entries(CASES)) {
+  const tree = layoutTree(sessionsFrom(pattern), { frame: 'canvas' });
+  const { x, y, width, height } = tree.frameBox;
+  canvasFrames.add(tree.frame);
+
+  const outside = pointsOf(tree).filter(
+    (p) => p.x < x || p.x > x + width || p.y < y || p.y > y + height,
+  );
+  const aspect = width / height;
+
+  if (outside.length > 0) {
+    fail(label, `${outside.length} point(s) outside canvas frame "${tree.frame}"`);
+  } else if (Math.abs(aspect - CANVAS_ASPECT) > 0.001) {
+    fail(label, `frame aspect ${aspect.toFixed(4)} != card aspect ${CANVAS_ASPECT.toFixed(4)}`);
+  } else if (Math.abs(x + width / 2 - TRUNK_X) > 0.01) {
+    fail(label, `frame is not centred on the trunk axis`);
+  } else {
+    pass(`${label} — "${tree.frame}"`);
+  }
+}
+
+if (canvasFrames.size !== 1) {
+  fail('canvas mode uses one frame everywhere', `saw ${canvasFrames.size}: ${[...canvasFrames]}`);
+} else {
+  pass(`every stage shares the frame "${[...canvasFrames][0]}"`);
 }
 
 // ------------------------------------------------------- 5. the derivation rule
