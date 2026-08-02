@@ -9,13 +9,90 @@ every decision in this repo without re-reading the code.
 
 ---
 
-## 2026-07-28 · Phase 2 · tree rendering engine
+## 2026-07-29 · Phase 2 follow-up · TreeView resize fix
 
-**Phase:** Phase 2 — `treeLayout.js`, `TreeSVG`, `TreeView` · **complete, not yet
-committed**
-**Branch:** unverified — I was told not to run git this session, so this entry is
-grounded in the files I changed, not in `git log` / `git diff --stat`. Re-check it
-against the diff before trusting the Changed list.
+**Phase:** Phase 2 — layout correction to the tree view · **complete, merged to
+main**
+**Branch:** `phase-2-tree-view`, fast-forwarded into `main`. Commit `d6102ec`
+(6 files, +162 / −19), on `origin/main`.
+**Prompt I gave:** "The TreeView card is too large. On a 1440x900 screen the tree
+fills the viewport and I have to scroll to reach 'Talk to your sapling'. Three
+fixes: size the tree so the whole view fits one 900px viewport using
+viewport-relative height; give the card a fixed aspect ratio so it stops resizing
+as the tree grows; set `preserveAspectRatio="xMidYMax meet"` so the pot stays
+planted at the bottom. Keep the shelf miniatures working."
+
+### Changed
+
+- `src/lib/treeLayout.js` — `layoutTree(sessions, { frame })` gains a `'canvas'`
+  mode; exports `CANVAS_FRAME`
+- `src/components/TreeSVG.jsx` — new `frameMode` and `preserveAspectRatio` props,
+  the latter defaulting to `xMidYMax meet`
+- `src/components/TreeView.jsx` — card is a fixed-aspect frame; `pb-36` → `pb-28`
+- `src/components/PotShelf.jsx` — fixed SVG box instead of `w-auto`
+- `scripts/check-determinism.mjs` — a canvas-mode check group
+- `PROGRESS.md` — the follow-up notes now superseded by this entry
+
+### Decisions
+
+- **Uniform framing for TreeView, shrink-wrapped for the shelf.** In `'canvas'`
+  mode every stage shares the mature frame, so one canvas unit is always the same
+  number of pixels and growth reads as growth rather than each stage being
+  rescaled to fill the card. **This reverses Phase 1's pot-crop decision, for
+  TreeView only.** Costs: a sprout now sits in a card roughly 57% empty above it —
+  headroom by design, but the opposite of the complaint that started this. The
+  shelf keeps per-stage frames, where a tall empty box was the original bug.
+- **The card is a fixed-aspect frame.** `aspect-[6/7]` is exactly the 312×364
+  canvas frame, so nothing letterboxes, and height drives width so the frame
+  cannot move as the tree grows. Cost: at 324×278 the tree is modest on a large
+  monitor; fitting six stacked elements into 900px is what bounds it.
+- **A px cap on top of the vh height** (`h-[36vh] max-h-[340px]`). Cost: unused
+  space on very tall screens. Benefit: the same tree is the same size on every
+  desktop, which pure `36vh` would not give.
+
+### Verified
+
+- lint: clean · build: succeeds (161.25 kB / 52.76 kB gzip)
+- `npm run check:tree`: 6 groups pass, including the new canvas-mode group —
+  bounds, trunk-centred, frame aspect matches the card, and one frame at every
+  stage (`4 96 312 364`)
+- `dist` grepped again for `Add fake major session` and `dev build only`:
+  0 matches, so the debug panel is still tree-shaken
+- **visually confirmed by me, outside the assistant's session**, via
+  `npm run dev`: the fix holds in the browser and the view no longer scrolls.
+  This bug was found by looking at it in the first place — as was the sprout
+  framing — which is why the whole card-sizing problem existed to fix.
+- the per-element px table below is still arithmetic from Tailwind's type scale,
+  not a measurement. The outcome is confirmed; the individual rows are not.
+
+| element | px | cumulative |
+| --- | --- | --- |
+| `pt-6` | 24 | 24 |
+| back link (`text-sm`, 20px line) | 20 | 44 |
+| skill name + stage label | 85.6 | 129.6 |
+| card (`mt-6` + 324) | 348 | 477.6 |
+| button + helper (`mt-6`) | 97.6 | **575.2** |
+| debug panel (dev only) | 162 | 737.2 |
+| `pb-28` | 112 | 849.2 |
+
+### Not done / next
+
+- The sprout's empty card was looked at and accepted — it reads as headroom, not
+  as barren. If that judgement ever changes, the canvas frame's top edge moves
+  down from `y=96` and the mature stage needs a second frame.
+- No `.gitattributes`: these files are LF in the repo and CRLF on checkout here,
+  so on another machine every one shows as modified with no real change.
+
+---
+
+## 2026-07-29 · Phase 2 · tree rendering engine
+
+**Phase:** Phase 2 — `treeLayout.js`, `TreeSVG`, `TreeView` · **complete, merged
+to main**
+**Branch:** `phase-2-tree-view`, fast-forwarded into `main`. Commit `2ed2489`
+(12 files, +1377 / −63), on `origin/main`. *Corrected 2026-07-29: this entry
+originally said "not yet committed" with an unverified branch, because git was
+off-limits during the build session.*
 **Prompt I gave:** "Implement Phase 2 — the tree rendering engine: `treeLayout.js`
 as a pure deterministic seeded function per Section 4's derivation rule, EXTEND
 `TreeSVG.jsx` (handle the POT_FRAME viewBox crop explicitly), quadratic Béziers
@@ -83,72 +160,37 @@ writing through `storage.addSession`."
   `Talk to your sapling` is present — so the panel and `clearSessions` are both
   tree-shaken, and `TreeView` is not
 - every changed module transforms through vite dev (HTTP 200 each)
-- **not verified: what any of this looks like.** I never rendered it in a browser.
-  Lint, build, and the geometry checks say the numbers are right and the code
-  loads; they say nothing about whether the tree is attractive.
+- **visually verified by me, outside the assistant's session**, via
+  `npm run dev`: all four growth stages render, the tree is identical after a
+  refresh (Section 9's determinism criterion, confirmed by eye as well as by
+  `check:tree`), and the shelf miniatures draw correctly. The assistant did not
+  see any of this — no browser was connected to it — so everything above this
+  bullet is command output and this bullet is mine.
 
-### Follow-up, same session · TreeView fit at 1440x900
-
-You reported the card filling the viewport and the button below the fold. Fixed:
-
-- `TreeView` card is now a fixed-aspect frame — `aspect-[6/7] h-[36vh]
-  max-h-[340px] min-h-[200px]` — so it no longer resizes as the tree grows.
-  `aspect-[6/7]` is exactly the 312x364 canvas frame's ratio, so no letterboxing.
-- `layoutTree(sessions, { frame })` gained a `'canvas'` mode: every stage shares
-  the mature frame, so one canvas unit is always the same number of pixels.
-  **This reverses Phase 1's pot-crop decision, for TreeView only.** It is what
-  makes growth read as growth instead of every stage being rescaled to fill the
-  card. Cost: a sprout now sits in a card that is ~57% empty above it. The shelf
-  keeps the shrink-wrapped per-stage frames, where a tall empty box was the
-  original bug.
-- `preserveAspectRatio="xMidYMax meet"` is now TreeSVG's default, so slack goes
-  above the drawing and the pot stays planted on the container floor. No visible
-  change on the shelf, which has no slack to distribute.
-- `pb-36` → `pb-28` on TreeView. 144px of bottom padding was most of the scroll;
-  112px still clears the 96px floor graphic.
-- `PotShelf` SVG box fixed at `h-24 w-20 sm:h-28 sm:w-24` — the shelf cards had
-  the same width-jitter bug, for the same aspect-ratio reason.
-
-Verified: lint clean, build succeeds, `check:tree` passes with a new canvas-mode
-group (bounds, trunk-centred, aspect matches the card, one frame at every stage),
-debug panel still absent from `dist`.
-
-**Not verified: still never rendered in a browser.** No Chrome was connected and
-the preview tool is rooted at the other project, so the 900px fit below is
-computed from Tailwind's type scale, not measured.
-
-| element | px | cumulative |
-| --- | --- | --- |
-| `pt-6` | 24 | 24 |
-| back link (`text-sm`, 20px line) | 20 | 44 |
-| skill name + stage label | 85.6 | 129.6 |
-| card (`mt-6` + 324) | 348 | 477.6 |
-| button + helper (`mt-6`) | 97.6 | **575.2** |
-| debug panel (dev only) | 162 | 737.2 |
-| `pb-28` | 112 | 849.2 |
+The card sizing shipped here was wrong and was corrected the same day — the bug
+was caught in that visual pass. See the TreeView resize entry above.
 
 ### Not done / next
 
-- Visual pass: open a tree, click the debug buttons, check the canopy at 375px.
-- Confirm the computed 900px fit above against a real browser.
-- Nothing is committed. Git was off-limits this session.
 - Phase 3 seam: `TreeView`'s disabled "Talk to your sapling" button, and
   `App.handleGrew(session)` — which is already exactly what end-of-chat will call.
 
 ### Ask Claude about
 
-- The dating on the Phase 1 entry below is `2026-07-29`; today is `2026-07-28`.
-  One of the two is wrong, and it makes newest-first ordering ambiguous.
 - The `frameFromStage` flag on the layout output is computed but nothing reads it.
   Keep it for the debug panel or drop it.
 - Five Phase 1 quiz questions are still unanswered (see below).
+- Six Phase 2 quiz questions were asked and are also unanswered.
 
 ---
 
-## 2026-07-29 · Phase 1 · room, shelf, and planting shipped
+## 2026-07-26 · Phase 1 · room, shelf, and planting shipped
 
-**Phase:** Phase 1 — HomeScreen, PotShelf, sapling creation · **complete**
-**Branch:** main
+**Phase:** Phase 1 — HomeScreen, PotShelf, sapling creation · **complete, merged
+to main**
+**Branch:** main. *Heading corrected 2026-07-29 from `2026-07-29` to `2026-07-26`:
+both commits this entry cites, `a20b107` and `dae40fc`, are dated 2026-07-26, and
+the old date broke the newest-first ordering.*
 **Prompt I gave:** "Build HomeScreen, PotShelf, and the sapling-creation flow per
 Sections 5 and 7: layered SVG cozy-room backdrop, an empty pot that when clicked
 reveals a 'Grow a sapling' button, a naming input (1–50 chars), and a shelf

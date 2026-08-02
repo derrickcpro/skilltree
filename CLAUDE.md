@@ -65,11 +65,28 @@ Then commit and push it, so the chat assistant can read it from GitHub.
 
 ## Phase status
 
-- **Phase 1 — room, shelf, planting: complete.** Verified: lint clean, build
-  succeeds, app persists across reload.
-- **Phase 2 — tree view: not started.** The shelf pot click in `App.jsx`
-  (`handleOpenTree`) is the seam it attaches to.
-- Phases 3–5: chat proxy, Supabase persistence, demo mode. Not started.
+- **Phase 0 — scaffold: complete, merged to main.** Vite + React + Tailwind v4,
+  design tokens in `@theme`.
+- **Phase 1 — room, shelf, planting: complete, merged to main.** Commits
+  `a20b107`, `dae40fc`.
+- **Phase 2 — tree rendering engine: complete, merged to main.** Commits
+  `2ed2489`, `d6102ec`. `treeLayout.js` derives all geometry from sessions;
+  `TreeSVG` renders it; `TreeView` is screen 2; a dev-only debug panel behind
+  `import.meta.env.DEV` grows fake sessions through `storage.addSession`.
+  Geometry verified by `npm run check:tree`; appearance verified by me in the
+  browser — all four growth stages, identical render after a refresh, and the
+  shelf miniatures.
+- **Phase 3 — chat + serverless proxy: next.** `api/chat.js` and
+  `api/classify.js` per Section 6, plus `ChatScreen` and `MessageBubble`. Two
+  seams are already in place: the disabled "Talk to your sapling" button in
+  `TreeView`, and `App.handleGrew(session)`, which is exactly what the
+  end-of-session save should call.
+- **Phase 4 — Supabase persistence & auth: not started.**
+- **Phases 5 and 6 — demo mode, polish pass: skipped by choice.** Not deferred,
+  not forgotten. Do not build them unless I say otherwise.
+- **Phase 7 — ship.** Backlog item to fold in: add `.gitattributes` with
+  `* text=auto eol=lf`. The repo stores LF, this machine checks out CRLF, so
+  without it every file shows as modified on another machine.
 
 Out of scope entirely — do not build unless asked: streaks, points, badges, any
 social feature, monthly summaries.
